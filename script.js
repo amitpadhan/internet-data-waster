@@ -97,8 +97,8 @@ function updateUI() {
         totalUnitEl.textContent = 'MB';
     }
 
-    // Speed
-    const mbps = currentSpeedBps / 1_000_000;
+    // Speed (Converted to MBps - Bytes per second)
+    const mbps = (currentSpeedBps / 8) / 1_000_000;
     currentSpeedEl.textContent = mbps.toFixed(2);
     speedHistory.push(mbps);
     if (speedHistory.length > 80) speedHistory.shift();
@@ -106,7 +106,7 @@ function updateUI() {
     // Peak
     if (currentSpeedBps > peakSpeedBps) {
         peakSpeedBps = currentSpeedBps;
-        peakSpeedEl.textContent = (peakSpeedBps / 1_000_000).toFixed(2);
+        peakSpeedEl.textContent = ((peakSpeedBps / 8) / 1_000_000).toFixed(2);
     }
 
     // Timer
@@ -137,15 +137,25 @@ function drawChart() {
     const max = Math.max(...speedHistory, 5);
     const step = W / (speedHistory.length - 1);
 
+    // Smooth Curve Implementation
+    function getPoint(i) {
+        return {
+            x: i * step,
+            y: H - (speedHistory[i] / max) * (H - 10) - 5
+        };
+    }
+
     // Fill
     ctx.beginPath();
-    speedHistory.forEach((v, i) => {
-        const x = i * step;
-        const y = H - (v / max) * (H - 10) - 5;
-        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-    });
-    ctx.lineTo((speedHistory.length - 1) * step, H);
-    ctx.lineTo(0, H);
+    ctx.moveTo(0, H);
+    ctx.lineTo(getPoint(0).x, getPoint(0).y);
+    for (let i = 0; i < speedHistory.length - 1; i++) {
+        const p0 = getPoint(i);
+        const p1 = getPoint(i + 1);
+        const cp1x = p0.x + (p1.x - p0.x) / 2;
+        ctx.bezierCurveTo(cp1x, p0.y, cp1x, p1.y, p1.x, p1.y);
+    }
+    ctx.lineTo(W, H);
     ctx.closePath();
     const fill = ctx.createLinearGradient(0, 0, 0, H);
     fill.addColorStop(0, 'rgba(251,191,36,0.25)');
@@ -156,14 +166,17 @@ function drawChart() {
     // Line
     ctx.beginPath();
     ctx.strokeStyle = '#fbbf24';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
-    speedHistory.forEach((v, i) => {
-        const x = i * step;
-        const y = H - (v / max) * (H - 10) - 5;
-        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-    });
+    
+    ctx.moveTo(getPoint(0).x, getPoint(0).y);
+    for (let i = 0; i < speedHistory.length - 1; i++) {
+        const p0 = getPoint(i);
+        const p1 = getPoint(i + 1);
+        const cp1x = p0.x + (p1.x - p0.x) / 2;
+        ctx.bezierCurveTo(cp1x, p0.y, cp1x, p1.y, p1.x, p1.y);
+    }
     ctx.stroke();
 
     // Glow on last point
