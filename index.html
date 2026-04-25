@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataWaster Pro | Elite Bandwidth Consumption</title>
+    <meta name="description" content="A premium utility to consume internet data for testing and benchmarking purposes. High-performance, real-time metrics, and stunning UI.">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="bg-glow"></div>
+    
+    <div class="container">
+        <header>
+            <div class="logo">
+                <span class="icon">⚡</span>
+                <h1>DATA<span>WASTER</span></h1>
+            </div>
+            <div class="status-badge" id="global-status">IDLE</div>
+        </header>
+
+        <main>
+            <section class="metrics-grid">
+                <div class="metric-card glass">
+                    <div class="label">Total Wasted</div>
+                    <div class="value" id="total-data">0.00 <span class="unit">MB</span></div>
+                    <div class="sub-label">session total</div>
+                </div>
+                <div class="metric-card glass">
+                    <div class="label">Peak Speed</div>
+                    <div class="value" id="peak-speed">0.00 <span class="unit">Mbps</span></div>
+                    <div class="sub-label">highest achieved</div>
+                </div>
+                <div class="metric-card glass">
+                    <div class="label">Current Speed</div>
+                    <div class="value" id="current-speed">0.00 <span class="unit">Mbps</span></div>
+                    <div class="sub-label">real-time link</div>
+                </div>
+                <div class="metric-card glass">
+                    <div class="label">Elapsed Time</div>
+                    <div class="value" id="elapsed-time">00:00:00</div>
+                    <div class="sub-label">active duration</div>
+                </div>
+            </section>
+
+            <section class="visualizer-container glass">
+                <div class="viz-header">
+                    <h3>Bandwidth Activity</h3>
+                    <div class="live-indicator">LIVE</div>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="speed-chart"></canvas>
+                </div>
+            </section>
+
+            <section class="controls glass">
+                <div class="control-group">
+                    <label>Intensity (Threads)</label>
+                    <input type="range" id="thread-range" min="1" max="10" value="3">
+                    <span id="thread-count">3 Threads</span>
+                </div>
+                <div class="control-group">
+                    <label>Target File Size</label>
+                    <select id="file-size">
+                        <option value="10">10 MB (Small)</option>
+                        <option value="50" selected>50 MB (Medium)</option>
+                        <option value="100">100 MB (Large)</option>
+                        <option value="500">500 MB (Ultra)</option>
+                    </select>
+                </div>
+                <div class="actions">
+                    <button id="start-btn" class="btn primary">START WASTING</button>
+                    <button id="stop-btn" class="btn secondary" disabled>STOP SESSION</button>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 DataWaster Pro. Designed for performance testing.</p>
+            <div class="warning">Warning: This tool consumes real internet data. Use with caution on metered connections.</div>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
