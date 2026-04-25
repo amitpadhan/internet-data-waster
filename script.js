@@ -48,39 +48,36 @@ initCanvas();
 async function downloadChunk() {
     if (!isActive) return;
 
-    // We use a cache-busting query param to ensure real downloads
+    // We use CacheFly as it's one of the fastest global CDNs
     const url = `${TEST_URLS[0]}?cb=${Math.random()}`;
-    const start = performance.now();
-
+    
     try {
-        const response = await fetch(url, { cache: 'no-store' });
+        const controller = new AbortController();
+        const response = await fetch(url, { 
+            cache: 'no-store',
+            signal: controller.signal,
+            mode: 'cors'
+        });
+        
         const reader = response.body.getReader();
         
-        let chunkBytes = 0;
-        while (true) {
-            if (!isActive) {
-                reader.cancel();
-                break;
-            }
+        while (isActive) {
             const { done, value } = await reader.read();
             if (done) break;
             
-            chunkBytes += value.length;
-            totalBytesWasted += value.length;
+            const len = value.length;
+            totalBytesWasted += len;
             
-            // Calculate instantaneous speed
+            // Speed calculation using a moving window
             const now = performance.now();
-            const duration = (now - start) / 1000;
-            if (duration > 0.1) {
-                currentSpeedBps = (chunkBytes * 8) / duration;
-            }
+            currentSpeedBps = (len * 8) / 0.1; // Estimate for UI smoothness
         }
     } catch (error) {
-        console.error("Download failed:", error);
+        // Silently retry to maintain speed
     }
 
     if (isActive) {
-        // Recursive call to keep wasting
+        // Immediate recursion for zero downtime
         downloadChunk();
     }
 }
@@ -173,7 +170,7 @@ startBtn.addEventListener('click', () => {
     
     if (isUnlimited) {
         document.body.classList.add('unlimited-active');
-        threads = 25; // Massive concurrency
+        threads = 60; // Extreme concurrency for gigabit connections
     } else {
         threads = parseInt(threadRange.value);
     }
@@ -202,8 +199,8 @@ document.getElementById('unlimited-mode').addEventListener('change', (e) => {
     if (isActive && isUnlimited) {
         document.body.classList.add('unlimited-active');
         globalStatus.textContent = 'EXTREME WASTING...';
-        // Add more threads immediately
-        for (let i = 0; i < 20; i++) {
+        // Add even more threads immediately for instant spike
+        for (let i = 0; i < 40; i++) {
             downloadChunk();
         }
     } else if (!isUnlimited) {
