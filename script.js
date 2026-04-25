@@ -9,6 +9,7 @@ let targetSizeMB = 50;
 let sessionTimer = null;
 let speedHistory = [];
 let sessionHistory = JSON.parse(localStorage.getItem('dw_sessions') || '[]');
+let isUnlimited = false;
 
 // DOM Elements
 const startBtn = document.getElementById('start-btn');
@@ -163,13 +164,20 @@ startBtn.addEventListener('click', () => {
     startTime = Date.now();
     totalBytesWasted = 0;
     speedHistory = [];
+    peakSpeedBps = 0;
     
     startBtn.disabled = true;
     stopBtn.disabled = false;
-    globalStatus.textContent = 'WASTING DATA...';
+    globalStatus.textContent = isUnlimited ? 'EXTREME WASTING...' : 'WASTING DATA...';
     globalStatus.classList.add('active');
+    
+    if (isUnlimited) {
+        document.body.classList.add('unlimited-active');
+        threads = 25; // Massive concurrency
+    } else {
+        threads = parseInt(threadRange.value);
+    }
 
-    threads = parseInt(threadRange.value);
     for (let i = 0; i < threads; i++) {
         downloadChunk();
     }
@@ -183,9 +191,25 @@ stopBtn.addEventListener('click', () => {
     stopBtn.disabled = true;
     globalStatus.textContent = 'SESSION STOPPED';
     globalStatus.classList.remove('active');
+    document.body.classList.remove('unlimited-active');
     clearInterval(sessionTimer);
     currentSpeedBps = 0;
     currentSpeedEl.innerHTML = `0.00 <span class="unit">Mbps</span>`;
+});
+
+document.getElementById('unlimited-mode').addEventListener('change', (e) => {
+    isUnlimited = e.target.checked;
+    if (isActive && isUnlimited) {
+        document.body.classList.add('unlimited-active');
+        globalStatus.textContent = 'EXTREME WASTING...';
+        // Add more threads immediately
+        for (let i = 0; i < 20; i++) {
+            downloadChunk();
+        }
+    } else if (!isUnlimited) {
+        document.body.classList.remove('unlimited-active');
+        if (isActive) globalStatus.textContent = 'WASTING DATA...';
+    }
 });
 
 threadRange.addEventListener('input', (e) => {

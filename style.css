@@ -220,8 +220,8 @@ canvas {
 .controls {
     padding: 1.25rem 1.5rem;
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 1.5rem;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
     align-items: end;
 }
 
@@ -236,9 +236,33 @@ canvas {
     color: var(--text-dim);
 }
 
-input[type="range"] {
-    width: 100%;
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    user-select: none;
+}
+
+.checkbox-group input {
     accent-color: var(--primary);
+    width: 18px;
+    height: 18px;
+}
+
+/* Unlimited Mode Pulse */
+body.unlimited-active .bg-glow {
+    background: 
+        radial-gradient(circle at 20% 20%, rgba(255, 0, 122, 0.2) 0%, transparent 40%),
+        radial-gradient(circle at 80% 80%, rgba(255, 0, 122, 0.2) 0%, transparent 40%);
+    animation: bgMove 5s infinite alternate linear;
+}
+
+body.unlimited-active .metric-card .value {
+    color: var(--accent);
+    text-shadow: 0 0 10px rgba(255, 0, 122, 0.5);
 }
 
 #thread-count {
