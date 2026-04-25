@@ -148,14 +148,14 @@ function drawChart() {
     ctx.lineTo(0, H);
     ctx.closePath();
     const fill = ctx.createLinearGradient(0, 0, 0, H);
-    fill.addColorStop(0, 'rgba(59,130,246,0.25)');
-    fill.addColorStop(1, 'rgba(59,130,246,0)');
+    fill.addColorStop(0, 'rgba(251,191,36,0.25)');
+    fill.addColorStop(1, 'rgba(251,191,36,0)');
     ctx.fillStyle = fill;
     ctx.fill();
 
     // Line
     ctx.beginPath();
-    ctx.strokeStyle = '#3b82f6';
+    ctx.strokeStyle = '#fbbf24';
     ctx.lineWidth = 2;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
@@ -171,15 +171,15 @@ function drawChart() {
     const ly = H - (speedHistory[speedHistory.length - 1] / max) * (H - 10) - 5;
     ctx.beginPath();
     ctx.arc(lx, ly, 4, 0, Math.PI * 2);
-    ctx.fillStyle = '#3b82f6';
-    ctx.shadowColor = '#3b82f6';
+    ctx.fillStyle = '#fbbf24';
+    ctx.shadowColor = '#fbbf24';
     ctx.shadowBlur = 10;
     ctx.fill();
     ctx.shadowBlur = 0;
 }
 
 function drawGrid(W, H) {
-    ctx.strokeStyle = 'rgba(99,179,237,0.06)';
+    ctx.strokeStyle = 'rgba(251,191,36,0.06)';
     ctx.lineWidth = 1;
     const rows = 4;
     for (let i = 0; i <= rows; i++) {
