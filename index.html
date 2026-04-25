@@ -3,98 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>DataWaster Pro | Elite Bandwidth Consumption</title>
-    <meta name="description" content="A premium utility to consume internet data for testing and benchmarking purposes. High-performance, real-time metrics, and stunning UI.">
-    <link rel="stylesheet" href="style.css">
+    <title>DataWaster Pro | Bandwidth Destroyer</title>
+    <meta name="description" content="Elite bandwidth consumption tool. Real-time metrics, extreme concurrency, stunning UI.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@300;500;700&display=swap&font-display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="bg-glow"></div>
-    
-    <div class="container">
-        <header>
-            <div class="logo">
-                <span class="icon">⚡</span>
-                <h1>DATA<span>WASTER</span></h1>
+
+    <!-- Animated BG Particles -->
+    <div class="bg-layer">
+        <div class="particle p1"></div>
+        <div class="particle p2"></div>
+        <div class="particle p3"></div>
+    </div>
+
+    <div class="app">
+
+        <!-- Header -->
+        <header class="header">
+            <div class="brand">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="currentColor"/></svg>
+                </div>
+                <div class="brand-text">
+                    <span class="brand-name">DATAWASTER</span>
+                    <span class="brand-tag">PRO v2.0</span>
+                </div>
             </div>
-            <div class="status-badge" id="global-status">IDLE</div>
+            <div class="status-pill" id="global-status">
+                <span class="status-dot"></span>
+                <span class="status-text">STANDBY</span>
+            </div>
         </header>
 
-        <main>
-            <section class="dashboard-grid glass">
-                <div class="metrics-row">
-                    <div class="metric-item">
-                        <span class="label">WASTED</span>
-                        <div class="value-group">
-                            <span class="value" id="total-data">0.00</span>
-                            <span class="unit">MB</span>
-                        </div>
-                    </div>
-                    <div class="metric-item">
-                        <span class="label">PEAK</span>
-                        <div class="value-group">
-                            <span class="value" id="peak-speed">0.00</span>
-                            <span class="unit">Mbps</span>
-                        </div>
-                    </div>
-                    <div class="metric-item highlight">
-                        <span class="label">SPEED</span>
-                        <div class="value-group">
-                            <span class="value" id="current-speed">0.00</span>
-                            <span class="unit">Mbps</span>
-                        </div>
-                    </div>
-                    <div class="metric-item">
-                        <span class="label">TIME</span>
-                        <span class="value" id="elapsed-time">00:00:00</span>
-                    </div>
-                </div>
-            </section>
+        <!-- Main Dashboard -->
+        <main class="dashboard">
 
-            <section class="visualizer-container glass">
-                <div class="viz-header">
-                    <h3>Bandwidth Activity</h3>
-                    <div class="live-indicator">LIVE</div>
+            <!-- Stat Cards Row -->
+            <div class="stats-row">
+                <div class="stat-card" id="card-wasted">
+                    <div class="stat-icon">📥</div>
+                    <div class="stat-info">
+                        <div class="stat-label">Total Wasted</div>
+                        <div class="stat-value"><span id="total-data">0.00</span> <span class="stat-unit" id="total-unit">MB</span></div>
+                    </div>
                 </div>
-                <div class="canvas-wrapper">
+                <div class="stat-card active-card" id="card-speed">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-info">
+                        <div class="stat-label">Live Speed</div>
+                        <div class="stat-value"><span id="current-speed">0.00</span> <span class="stat-unit">Mbps</span></div>
+                    </div>
+                </div>
+                <div class="stat-card" id="card-peak">
+                    <div class="stat-icon">🏆</div>
+                    <div class="stat-info">
+                        <div class="stat-label">Peak Speed</div>
+                        <div class="stat-value"><span id="peak-speed">0.00</span> <span class="stat-unit">Mbps</span></div>
+                    </div>
+                </div>
+                <div class="stat-card" id="card-time">
+                    <div class="stat-icon">⏱</div>
+                    <div class="stat-info">
+                        <div class="stat-label">Elapsed</div>
+                        <div class="stat-value mono" id="elapsed-time">00:00:00</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Area -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <span class="chart-title">Bandwidth Usage</span>
+                    <div class="live-badge">
+                        <span class="live-dot"></span> LIVE
+                    </div>
+                </div>
+                <div class="chart-body">
                     <canvas id="speed-chart"></canvas>
                 </div>
-            </section>
+            </div>
 
-            <section class="controls glass">
-                <div class="control-group">
-                    <label>Intensity (Threads)</label>
-                    <input type="range" id="thread-range" min="1" max="10" value="3">
-                    <span id="thread-count">3 Threads</span>
+            <!-- Controls -->
+            <div class="controls-card">
+                <div class="control-item">
+                    <label>Threads <span class="ctrl-val" id="thread-count">3</span></label>
+                    <input type="range" id="thread-range" min="1" max="20" value="3">
                 </div>
-                <div class="control-group">
-                    <label>Target File Size</label>
-                    <select id="file-size">
-                        <option value="10">10 MB (Small)</option>
-                        <option value="50" selected>50 MB (Medium)</option>
-                        <option value="100">100 MB (Large)</option>
-                        <option value="500">500 MB (Ultra)</option>
-                    </select>
+                <div class="control-item">
+                    <label>Mode</label>
+                    <div class="mode-toggle">
+                        <button class="mode-btn active" id="mode-normal" onclick="setMode('normal')">Normal</button>
+                        <button class="mode-btn" id="mode-unlimited" onclick="setMode('unlimited')">⚡ Extreme</button>
+                    </div>
                 </div>
-                <div class="control-group checkbox-group">
-                    <label for="unlimited-mode">
-                        <input type="checkbox" id="unlimited-mode">
-                        Unlimited Mode
-                    </label>
+                <div class="control-actions">
+                    <button class="btn-start" id="start-btn">▶ START</button>
+                    <button class="btn-stop" id="stop-btn" disabled>■ STOP</button>
                 </div>
-                <div class="actions">
-                    <button id="start-btn" class="btn primary">START WASTING</button>
-                    <button id="stop-btn" class="btn secondary" disabled>STOP SESSION</button>
-                </div>
-            </section>
+            </div>
+
         </main>
 
-        <footer>
-            <p>&copy; 2026 DataWaster Pro. Designed for performance testing.</p>
-            <div class="warning">Warning: This tool consumes real internet data. Use with caution on metered connections.</div>
+        <footer class="footer">
+            <span>⚠ Consumes real internet data. Use with caution on metered connections.</span>
         </footer>
+
     </div>
 
     <script src="script.js"></script>

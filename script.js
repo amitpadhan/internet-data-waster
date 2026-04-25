@@ -1,227 +1,263 @@
-// State Management
+// ===== STATE =====
 let isActive = false;
+let isUnlimited = false;
 let startTime = 0;
 let totalBytesWasted = 0;
 let currentSpeedBps = 0;
 let peakSpeedBps = 0;
 let threads = 3;
-let targetSizeMB = 50;
 let sessionTimer = null;
 let speedHistory = [];
-let sessionHistory = JSON.parse(localStorage.getItem('dw_sessions') || '[]');
-let isUnlimited = false;
 
-// DOM Elements
-const startBtn = document.getElementById('start-btn');
-const stopBtn = document.getElementById('stop-btn');
-const globalStatus = document.getElementById('global-status');
-const totalDataEl = document.getElementById('total-data');
-const currentSpeedEl = document.getElementById('current-speed');
-const elapsedTimeEl = document.getElementById('elapsed-time');
-const threadRange = document.getElementById('thread-range');
-const threadCountLabel = document.getElementById('thread-count');
-const fileSizeSelect = document.getElementById('file-size');
-const canvas = document.getElementById('speed-chart');
-const ctx = canvas.getContext('2d');
-
-// Constants
+// ===== URLS (Fast CDN sources) =====
 const TEST_URLS = [
     'https://cachefly.cachefly.net/100mb.test',
     'https://cachefly.cachefly.net/10mb.test',
-    'https://cachefly.cachefly.net/100mb.test' // Duplicate as fallback
 ];
 
-// Initialize Canvas
+// ===== DOM REFS =====
+const startBtn = document.getElementById('start-btn');
+const stopBtn = document.getElementById('stop-btn');
+const statusEl = document.getElementById('global-status');
+const statusText = statusEl.querySelector('.status-text');
+const totalDataEl = document.getElementById('total-data');
+const totalUnitEl = document.getElementById('total-unit');
+const currentSpeedEl = document.getElementById('current-speed');
+const peakSpeedEl = document.getElementById('peak-speed');
+const elapsedTimeEl = document.getElementById('elapsed-time');
+const threadRange = document.getElementById('thread-range');
+const threadCountEl = document.getElementById('thread-count');
+const canvas = document.getElementById('speed-chart');
+const ctx = canvas.getContext('2d');
+
+// ===== CANVAS INIT =====
 function initCanvas() {
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.parentElement.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
+    canvas.width = Math.floor(rect.width * dpr);
+    canvas.height = Math.floor(rect.height * dpr);
     ctx.scale(dpr, dpr);
-    canvas.style.width = `${rect.width}px`;
-    canvas.style.height = `${rect.height}px`;
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
 }
-window.addEventListener('resize', initCanvas);
+
+window.addEventListener('resize', () => {
+    initCanvas();
+    drawChart();
+});
 initCanvas();
 
-// Logic
+// ===== DOWNLOAD ENGINE =====
 async function downloadChunk() {
     if (!isActive) return;
+    const url = TEST_URLS[0] + '?r=' + Math.random();
 
-    // We use CacheFly as it's one of the fastest global CDNs
-    const url = `${TEST_URLS[0]}?cb=${Math.random()}`;
-    
     try {
-        const controller = new AbortController();
-        const response = await fetch(url, { 
+        const response = await fetch(url, {
             cache: 'no-store',
-            signal: controller.signal,
-            mode: 'cors'
+            mode: 'cors',
         });
-        
         const reader = response.body.getReader();
-        
+        let lastTime = performance.now();
+        let window_bytes = 0;
+
         while (isActive) {
             const { done, value } = await reader.read();
             if (done) break;
-            
+
             const len = value.length;
             totalBytesWasted += len;
-            
-            // Speed calculation using a moving window
-            const now = performance.now();
-            currentSpeedBps = (len * 8) / 0.1; // Estimate for UI smoothness
-        }
-    } catch (error) {
-        // Silently retry to maintain speed
-    }
+            window_bytes += len;
 
-    if (isActive) {
-        // Immediate recursion for zero downtime
-        downloadChunk();
-    }
+            const now = performance.now();
+            const elapsed_s = (now - lastTime) / 1000;
+            if (elapsed_s >= 0.2) {
+                currentSpeedBps = (window_bytes * 8) / elapsed_s;
+                window_bytes = 0;
+                lastTime = now;
+            }
+        }
+    } catch (_) { /* silent retry */ }
+
+    if (isActive) downloadChunk();
 }
 
+// ===== UI UPDATE LOOP =====
 function updateUI() {
     if (!isActive) return;
 
-    // Update Data Wasted
-    const mbWasted = totalBytesWasted / (1024 * 1024);
-    const gbWasted = mbWasted / 1024;
-    
-    if (gbWasted > 1) {
-        totalDataEl.innerHTML = `${gbWasted.toFixed(2)} <span class="unit">GB</span>`;
+    // Total data
+    const mb = totalBytesWasted / (1024 * 1024);
+    const gb = mb / 1024;
+    if (gb >= 1) {
+        totalDataEl.textContent = gb.toFixed(2);
+        totalUnitEl.textContent = 'GB';
     } else {
-        totalDataEl.innerHTML = `${mbWasted.toFixed(2)} <span class="unit">MB</span>`;
+        totalDataEl.textContent = mb.toFixed(2);
+        totalUnitEl.textContent = 'MB';
     }
 
-    // Update Speed
-    const mbps = (currentSpeedBps / 1000000);
-    currentSpeedEl.innerHTML = `${mbps.toFixed(2)} <span class="unit">Mbps</span>`;
-    
+    // Speed
+    const mbps = currentSpeedBps / 1_000_000;
+    currentSpeedEl.textContent = mbps.toFixed(2);
+    speedHistory.push(mbps);
+    if (speedHistory.length > 80) speedHistory.shift();
+
+    // Peak
     if (currentSpeedBps > peakSpeedBps) {
         peakSpeedBps = currentSpeedBps;
-        const peakMbps = (peakSpeedBps / 1000000).toFixed(2);
-        document.getElementById('peak-speed').innerHTML = `${peakMbps} <span class="unit">Mbps</span>`;
+        peakSpeedEl.textContent = (peakSpeedBps / 1_000_000).toFixed(2);
     }
-    
-    speedHistory.push(mbps);
-    if (speedHistory.length > 100) speedHistory.shift();
 
-    // Update Time
+    // Timer
     const elapsed = Math.floor((Date.now() - startTime) / 1000);
-    const h = Math.floor(elapsed / 3600).toString().padStart(2, '0');
-    const m = Math.floor((elapsed % 3600) / 60).toString().padStart(2, '0');
-    const s = (elapsed % 60).toString().padStart(2, '0');
+    const h = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+    const m = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+    const s = String(elapsed % 60).padStart(2, '0');
     elapsedTimeEl.textContent = `${h}:${m}:${s}`;
 
     drawChart();
 }
 
+// ===== CHART =====
 function drawChart() {
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
+    const W = rect.width;
+    const H = rect.height;
 
-    ctx.clearRect(0, 0, width, height);
-    if (speedHistory.length < 2) return;
+    ctx.clearRect(0, 0, W, H);
+    if (speedHistory.length < 2) {
+        drawGrid(W, H);
+        return;
+    }
 
+    drawGrid(W, H);
+
+    const max = Math.max(...speedHistory, 5);
+    const step = W / (speedHistory.length - 1);
+
+    // Fill
     ctx.beginPath();
-    ctx.strokeStyle = '#00f2ff';
-    ctx.lineWidth = 3;
-    ctx.lineJoin = 'round';
-
-    const step = width / (speedHistory.length - 1);
-    const maxSpeed = Math.max(...speedHistory, 50);
-    
-    speedHistory.forEach((speed, i) => {
+    speedHistory.forEach((v, i) => {
         const x = i * step;
-        const y = height - (speed / maxSpeed) * (height - 30) - 15;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+        const y = H - (v / max) * (H - 10) - 5;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     });
-
-    // Create gradient fill
-    const gradient = ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, 'rgba(0, 242, 255, 0.3)');
-    gradient.addColorStop(1, 'rgba(0, 242, 255, 0)');
-    
-    ctx.stroke();
-    
-    ctx.lineTo((speedHistory.length - 1) * step, height);
-    ctx.lineTo(0, height);
-    ctx.fillStyle = gradient;
+    ctx.lineTo((speedHistory.length - 1) * step, H);
+    ctx.lineTo(0, H);
+    ctx.closePath();
+    const fill = ctx.createLinearGradient(0, 0, 0, H);
+    fill.addColorStop(0, 'rgba(59,130,246,0.25)');
+    fill.addColorStop(1, 'rgba(59,130,246,0)');
+    ctx.fillStyle = fill;
     ctx.fill();
+
+    // Line
+    ctx.beginPath();
+    ctx.strokeStyle = '#3b82f6';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    speedHistory.forEach((v, i) => {
+        const x = i * step;
+        const y = H - (v / max) * (H - 10) - 5;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Glow on last point
+    const lx = (speedHistory.length - 1) * step;
+    const ly = H - (speedHistory[speedHistory.length - 1] / max) * (H - 10) - 5;
+    ctx.beginPath();
+    ctx.arc(lx, ly, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#3b82f6';
+    ctx.shadowColor = '#3b82f6';
+    ctx.shadowBlur = 10;
+    ctx.fill();
+    ctx.shadowBlur = 0;
 }
 
-// Event Listeners
+function drawGrid(W, H) {
+    ctx.strokeStyle = 'rgba(99,179,237,0.06)';
+    ctx.lineWidth = 1;
+    const rows = 4;
+    for (let i = 0; i <= rows; i++) {
+        const y = (H / rows) * i;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(W, y);
+        ctx.stroke();
+    }
+}
+
+// ===== MODE TOGGLE =====
+window.setMode = function(mode) {
+    isUnlimited = mode === 'unlimited';
+    document.getElementById('mode-normal').classList.toggle('active', !isUnlimited);
+    document.getElementById('mode-unlimited').classList.toggle('active', isUnlimited);
+
+    if (isActive) {
+        if (isUnlimited) {
+            document.body.classList.add('extreme');
+            statusEl.className = 'status-pill extreme';
+            statusText.textContent = 'EXTREME';
+            for (let i = 0; i < 40; i++) downloadChunk();
+        } else {
+            document.body.classList.remove('extreme');
+            statusEl.className = 'status-pill active';
+            statusText.textContent = 'WASTING';
+        }
+    }
+};
+
+// ===== CONTROLS =====
+threadRange.addEventListener('input', (e) => {
+    threads = parseInt(e.target.value);
+    threadCountEl.textContent = threads;
+});
+
 startBtn.addEventListener('click', () => {
     isActive = true;
     startTime = Date.now();
     totalBytesWasted = 0;
-    speedHistory = [];
     peakSpeedBps = 0;
-    
+    speedHistory = [];
+    currentSpeedEl.textContent = '0.00';
+    peakSpeedEl.textContent = '0.00';
+    totalDataEl.textContent = '0.00';
+    totalUnitEl.textContent = 'MB';
+    elapsedTimeEl.textContent = '00:00:00';
+
     startBtn.disabled = true;
     stopBtn.disabled = false;
-    globalStatus.textContent = isUnlimited ? 'EXTREME WASTING...' : 'WASTING DATA...';
-    globalStatus.classList.add('active');
-    
+
+    const threadCount = isUnlimited ? 60 : threads;
+    for (let i = 0; i < threadCount; i++) downloadChunk();
+
+    document.body.classList.add('running');
     if (isUnlimited) {
-        document.body.classList.add('unlimited-active');
-        threads = 60; // Extreme concurrency for gigabit connections
+        document.body.classList.add('extreme');
+        statusEl.className = 'status-pill extreme';
+        statusText.textContent = 'EXTREME';
     } else {
-        threads = parseInt(threadRange.value);
+        statusEl.className = 'status-pill active';
+        statusText.textContent = 'WASTING';
     }
 
-    for (let i = 0; i < threads; i++) {
-        downloadChunk();
-    }
-
-    sessionTimer = setInterval(updateUI, 1000);
+    sessionTimer = setInterval(updateUI, 500);
 });
 
 stopBtn.addEventListener('click', () => {
     isActive = false;
+    clearInterval(sessionTimer);
+
     startBtn.disabled = false;
     stopBtn.disabled = true;
-    globalStatus.textContent = 'SESSION STOPPED';
-    globalStatus.classList.remove('active');
-    document.body.classList.remove('unlimited-active');
-    clearInterval(sessionTimer);
+
+    document.body.classList.remove('running', 'extreme');
+    statusEl.className = 'status-pill';
+    statusText.textContent = 'STOPPED';
     currentSpeedBps = 0;
-    currentSpeedEl.innerHTML = `0.00 <span class="unit">Mbps</span>`;
-});
-
-document.getElementById('unlimited-mode').addEventListener('change', (e) => {
-    isUnlimited = e.target.checked;
-    if (isActive && isUnlimited) {
-        document.body.classList.add('unlimited-active');
-        globalStatus.textContent = 'EXTREME WASTING...';
-        // Add even more threads immediately for instant spike
-        for (let i = 0; i < 40; i++) {
-            downloadChunk();
-        }
-    } else if (!isUnlimited) {
-        document.body.classList.remove('unlimited-active');
-        if (isActive) globalStatus.textContent = 'WASTING DATA...';
-    }
-});
-
-threadRange.addEventListener('input', (e) => {
-    threadCountLabel.textContent = `${e.target.value} Threads`;
-    if (isActive) {
-        const newThreads = parseInt(e.target.value);
-        if (newThreads > threads) {
-            for (let i = 0; i < newThreads - threads; i++) {
-                downloadChunk();
-            }
-        }
-        threads = newThreads;
-    }
-});
-
-fileSizeSelect.addEventListener('change', (e) => {
-    targetSizeMB = parseInt(e.target.value);
+    currentSpeedEl.textContent = '0.00';
 });
