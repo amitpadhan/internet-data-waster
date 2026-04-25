@@ -23,26 +23,33 @@
         </header>
 
         <main>
-            <section class="metrics-grid">
-                <div class="metric-card glass">
-                    <div class="label">Total Wasted</div>
-                    <div class="value" id="total-data">0.00 <span class="unit">MB</span></div>
-                    <div class="sub-label">session total</div>
-                </div>
-                <div class="metric-card glass">
-                    <div class="label">Peak Speed</div>
-                    <div class="value" id="peak-speed">0.00 <span class="unit">Mbps</span></div>
-                    <div class="sub-label">highest achieved</div>
-                </div>
-                <div class="metric-card glass">
-                    <div class="label">Current Speed</div>
-                    <div class="value" id="current-speed">0.00 <span class="unit">Mbps</span></div>
-                    <div class="sub-label">real-time link</div>
-                </div>
-                <div class="metric-card glass">
-                    <div class="label">Elapsed Time</div>
-                    <div class="value" id="elapsed-time">00:00:00</div>
-                    <div class="sub-label">active duration</div>
+            <section class="dashboard-grid glass">
+                <div class="metrics-row">
+                    <div class="metric-item">
+                        <span class="label">WASTED</span>
+                        <div class="value-group">
+                            <span class="value" id="total-data">0.00</span>
+                            <span class="unit">MB</span>
+                        </div>
+                    </div>
+                    <div class="metric-item">
+                        <span class="label">PEAK</span>
+                        <div class="value-group">
+                            <span class="value" id="peak-speed">0.00</span>
+                            <span class="unit">Mbps</span>
+                        </div>
+                    </div>
+                    <div class="metric-item highlight">
+                        <span class="label">SPEED</span>
+                        <div class="value-group">
+                            <span class="value" id="current-speed">0.00</span>
+                            <span class="unit">Mbps</span>
+                        </div>
+                    </div>
+                    <div class="metric-item">
+                        <span class="label">TIME</span>
+                        <span class="value" id="elapsed-time">00:00:00</span>
+                    </div>
                 </div>
             </section>
 
